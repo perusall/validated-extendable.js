@@ -52,11 +52,10 @@ export const Validated = <
     Options extends { wrapValue: true } ? true : IsPrimitive<z.infer<Schema>>
   >;
   ctor.schema = schema;
-  ctor.z = function (this: typeof ctor) {
+  ctor.z = function <T extends typeof ctor>(this: T) {
     return z.ZodAny.create().transform((data, ctx) => {
       try {
-        // biome-ignore lint/suspicious/noExplicitAny:
-        return new this(data) as any;
+        return new this(data) as InstanceType<T>;
       } catch (error) {
         if (error instanceof z.ZodError) {
           for (const issue of error.issues) {
@@ -135,11 +134,10 @@ export const ValidatedMutable = <
     Options extends { wrapValue: true } ? true : IsPrimitive<z.infer<Schema>>
   >;
   ctor.schema = schema;
-  ctor.z = function (this: typeof ctor) {
+  ctor.z = function <T extends typeof ctor>(this: T) {
     return z.ZodAny.create().transform((data, ctx) => {
       try {
-        // biome-ignore lint/suspicious/noExplicitAny:
-        return new this(data) as any;
+        return new this(data) as InstanceType<T>;
       } catch (error) {
         if (error instanceof z.ZodError) {
           for (const issue of error.issues) {
