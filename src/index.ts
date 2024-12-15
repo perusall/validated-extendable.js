@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 type IsPrimitive<T> = T extends object ? false : true;
 
@@ -14,6 +14,9 @@ export type ValidatedConstructor<
       : z.infer<Schema>
   >;
   schema: Schema;
+  z: <T extends ValidatedConstructor<Schema, WrapValue>>(
+    this: T,
+  ) => z.ZodType<InstanceType<T>, z.ZodTypeDef, z.input<Schema>>;
 };
 
 export type ValidatedMutableConstructor<
@@ -24,6 +27,9 @@ export type ValidatedMutableConstructor<
     value: z.input<Schema>,
   ): WrapValue extends true ? { value: z.infer<Schema> } : z.infer<Schema>;
   schema: Schema;
+  z: <T extends ValidatedMutableConstructor<Schema, WrapValue>>(
+    this: T,
+  ) => z.ZodType<InstanceType<T>, z.ZodTypeDef, z.input<Schema>>;
 };
 
 export const Validated = <
@@ -46,6 +52,22 @@ export const Validated = <
     Options extends { wrapValue: true } ? true : IsPrimitive<z.infer<Schema>>
   >;
   ctor.schema = schema;
+  ctor.z = function (this: typeof ctor) {
+    return z.ZodAny.create().transform((data, ctx) => {
+      try {
+        // biome-ignore lint/suspicious/noExplicitAny:
+        return new this(data) as any;
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          for (const issue of error.issues) {
+            ctx.addIssue(issue);
+          }
+          return z.NEVER;
+        }
+        throw error;
+      }
+    });
+  };
   return ctor;
 };
 
@@ -113,6 +135,22 @@ export const ValidatedMutable = <
     Options extends { wrapValue: true } ? true : IsPrimitive<z.infer<Schema>>
   >;
   ctor.schema = schema;
+  ctor.z = function (this: typeof ctor) {
+    return z.ZodAny.create().transform((data, ctx) => {
+      try {
+        // biome-ignore lint/suspicious/noExplicitAny:
+        return new this(data) as any;
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          for (const issue of error.issues) {
+            ctx.addIssue(issue);
+          }
+          return z.NEVER;
+        }
+        throw error;
+      }
+    });
+  };
   return ctor;
 };
 

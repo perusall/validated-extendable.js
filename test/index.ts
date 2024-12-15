@@ -43,6 +43,14 @@ test("validate", (t) => {
   t.is(person2.value.name, "John");
   t.is(person2.value.age, 30);
   t.is(person2.greet(), "Hi, It's John!");
+
+  const person3 = Person.z().parse({
+    name: "John",
+    age: 30,
+  });
+  t.is(person3.name, "John");
+  t.is(person3.age, 30);
+  t.is(person3.greet(), "Hi, It's John!");
 });
 
 test("validate error", (t) => {
@@ -134,6 +142,18 @@ test("validate mutable", (t) => {
   t.is(person2.value.name, "Jane");
   t.is(person2.greet(), "Hi, It's Jane!");
   t.is(person2.value.age, 31);
+  const person3 = PersonMutable.z().parse({
+    name: "John",
+    age: 30,
+  });
+  t.is(person3.name, "John");
+  t.is(person3.greet(), "Hi, It's John!");
+  t.is(person3.age, 30);
+  person3.name = "Jane";
+  person3.age = 31;
+  t.is(person3.name, "Jane");
+  t.is(person3.greet(), "Hi, It's Jane!");
+  t.is(person3.age, 31);
 });
 
 test("validate mutable error (construct)", (t) => {
