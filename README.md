@@ -21,6 +21,7 @@
 - Both readonly (default) and mutable properties
 - Validation in setters of mutable properties
 - Wrapping a validated primitive value in a class
+- **Compatible with Zod 4**
 
 ## Installation
 
@@ -28,13 +29,15 @@
 | ----------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
 | <pre>npm install validated-extendable zod</pre> | <pre>pnpm add validated-extendable zod</pre> | <pre>yarn add validated-extendable zod</pre> |
 
+> **Note**: This package requires Zod 4.0.10+.
+
 ## Usage
 
 ### Basic
 
 ```typescript
-import { Validated } from "validated-extendable";
-import { z } from "zod";
+import { Validated } from 'validated-extendable';
+import { z } from 'zod';
 
 const schema = z.object({
   name: z.string().min(1),
@@ -56,21 +59,21 @@ class Person extends Validated(schema) {
 // const person = new Person({ age: 25 }); // => Compile error: Property 'name' is missing in type '{ age: number; }' but required in type '{ name: string; age: number; }'.
 
 /* Constructor will validate the input using the zod schema! */
-const person = new Person({ name: "John", age: 25 });
+const person = new Person({ name: 'John', age: 25 });
 // const invalidPerson = new Person({ name: "John", age: -1 }); // => Throws an error
 
 /* All properties are fully typed and accessible as usual */
 console.log(person.name, person.age); // => John 25
 
 /* You can get the original zod schema by accessing the 'schema' static property */
-Person.schema.parse({ name: "John", age: 25 }); // => { name: 'John', age: 25 }
+Person.schema.parse({ name: 'John', age: 25 }); // => { name: 'John', age: 25 }
 ```
 
 ### Mutable
 
 ```typescript
-import { ValidatedMutable } from "validated-extendable";
-import { z } from "zod";
+import { ValidatedMutable } from 'validated-extendable';
+import { z } from 'zod';
 
 /* By default, all properties are readonly. To make them mutable, you can use 'ValidatedMutable' instead of 'Validated'. */
 class Person extends ValidatedMutable(
@@ -84,18 +87,18 @@ class Person extends ValidatedMutable(
   }
 }
 
-const person = new Person({ name: "John", age: 25 });
+const person = new Person({ name: 'John', age: 25 });
 
 /* Mutation of the properties is also validated as constructor is */
-person.name = "Jane";
+person.name = 'Jane';
 // person.age = -1; // => Throws an error
 ```
 
 ### Primitive Types
 
 ```typescript
-import { Validated } from "validated-extendable";
-import { z } from "zod";
+import { Validated } from 'validated-extendable';
+import { z } from 'zod';
 
 /* Both 'Validated' and 'ValidatedMutable' support primitive types (e.g. z.string(), z.number(), z.boolean(), ...) */
 class Age extends Validated(z.number().nonnegative().int()) {
@@ -118,11 +121,11 @@ By default, the result type of the validation (other than primitive types) shoul
 However, you can use the `wrapValue` option to wrap an uninheritable type within an object, making it inheritable (like primitive types are wrapped in above examples).
 
 ```typescript
-import { Validated } from "validated-extendable";
-import { z } from "zod";
+import { Validated } from 'validated-extendable';
+import { z } from 'zod';
 
 /* The validation result type will be '{ success: true, message: string } | { success: false, error: string }' */
-const schema = z.discriminatedUnion("success", [
+const schema = z.discriminatedUnion('success', [
   z.object({
     success: z.literal(true),
     message: z.string(),
@@ -141,15 +144,15 @@ class Result extends Validated(schema, { wrapValue: true }) {
   }
 }
 
-const failure = new Result({ success: false, error: "Oops!" });
+const failure = new Result({ success: false, error: 'Oops!' });
 console.log(failure.getError()); // => Oops!
 ```
 
 Validation of setters provided by `ValidatedMutable` won't be called when you set a nested property.
 
 ```typescript
-import { ValidatedMutable } from "validated-extendable";
-import { z } from "zod";
+import { ValidatedMutable } from 'validated-extendable';
+import { z } from 'zod';
 
 const schema = z.object({
   foo: z.number().nonnegative().int(),
@@ -173,8 +176,8 @@ x.bar.baz = -1; // => Throws no error!!!
 ```
 
 ```typescript
-import { ValidatedMutable } from "validated-extendable";
-import { z } from "zod";
+import { ValidatedMutable } from 'validated-extendable';
+import { z } from 'zod';
 
 const schema = z.object({
   foo: z.number().nonnegative().int(),

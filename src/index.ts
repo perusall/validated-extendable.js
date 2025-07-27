@@ -1,47 +1,45 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 type IsPrimitive<T> = T extends object ? false : true;
 
 export type ValidatedConstructor<
   Schema extends z.ZodType<unknown>,
-  WrapValue extends boolean,
+  WrapValue extends boolean
 > = {
-  new (
-    value: z.input<Schema>,
-  ): Readonly<
+  new (value: z.input<Schema>): Readonly<
     WrapValue extends true
       ? { value: Readonly<z.infer<Schema>> }
       : z.infer<Schema>
   >;
   schema: Schema;
   z: <T extends ValidatedConstructor<Schema, WrapValue>>(
-    this: T,
-  ) => z.ZodType<InstanceType<T>, z.ZodTypeDef, z.input<Schema>>;
+    this: T
+  ) => z.ZodType<InstanceType<T>>;
 };
 
 export type ValidatedMutableConstructor<
   Schema extends z.ZodType<unknown>,
-  WrapValue extends boolean,
+  WrapValue extends boolean
 > = {
-  new (
-    value: z.input<Schema>,
-  ): WrapValue extends true ? { value: z.infer<Schema> } : z.infer<Schema>;
+  new (value: z.input<Schema>): WrapValue extends true
+    ? { value: z.infer<Schema> }
+    : z.infer<Schema>;
   schema: Schema;
   z: <T extends ValidatedMutableConstructor<Schema, WrapValue>>(
-    this: T,
-  ) => z.ZodType<InstanceType<T>, z.ZodTypeDef, z.input<Schema>>;
+    this: T
+  ) => z.ZodType<InstanceType<T>>;
 };
 
 export const Validated = <
   Schema extends z.ZodType<unknown>,
-  Options extends { wrapValue: true } | null = null,
+  Options extends { wrapValue: true } | null = null
 >(
   schema: Schema,
-  options?: Options,
+  options?: Options
 ) => {
   const ctor = function Validated(
     this: Record<string, unknown>,
-    value: z.input<typeof schema>,
+    value: z.input<typeof schema>
   ) {
     const validatedValue = schema.parse(value);
     const wrapValue = !isObject(validatedValue) || options?.wrapValue;
@@ -53,29 +51,29 @@ export const Validated = <
   >;
   ctor.schema = schema;
   ctor.z = function <T extends typeof ctor>(this: T) {
-    return z.ZodAny.create().transform((data, ctx) => {
+    return z.any().transform((data: unknown, ctx: z.RefinementCtx) => {
       try {
-        return new this(data) as InstanceType<T>;
+        return new this(data as z.input<Schema>) as InstanceType<T>;
       } catch (error) {
         if (error instanceof z.ZodError) {
           for (const issue of error.issues) {
             ctx.addIssue(issue);
           }
-          return z.NEVER;
+          return z.never() as never;
         }
         throw error;
       }
-    });
+    }) as z.ZodType<InstanceType<T>>;
   };
   return ctor;
 };
 
 export const ValidatedMutable = <
   Schema extends z.ZodType<unknown>,
-  Options extends { wrapValue: true } | null = null,
+  Options extends { wrapValue: true } | null = null
 >(
   schema: Schema,
-  options?: Options,
+  options?: Options
 ) => {
   const makeValidatedValueProxy = (initialInput: unknown) => {
     const inputObject: Record<string | symbol, unknown> = {};
@@ -93,7 +91,7 @@ export const ValidatedMutable = <
           return Reflect.set(
             object,
             propertyName,
-            validatedNewValue[propertyName],
+            validatedNewValue[propertyName]
           );
         },
       });
@@ -101,7 +99,7 @@ export const ValidatedMutable = <
   };
   const ctor = function ValidatedMutable(
     this: Record<string, unknown>,
-    value: z.input<typeof schema>,
+    value: z.input<typeof schema>
   ) {
     const validatedValue = schema.parse(value);
     if (!isObject(validatedValue) || options?.wrapValue) {
@@ -113,21 +111,21 @@ export const ValidatedMutable = <
         Object.create(this, Object.getOwnPropertyDescriptors(_this)),
         {
           set(object, propertyName, newValue) {
-            if (propertyName !== "value") {
+            if (propertyName !== 'value') {
               return Reflect.set(object, propertyName, newValue);
             }
             const validatedNewValue = schema.parse(newValue);
             const validatedNewValueProxy = isObject(validatedNewValue)
               ? makeValidatedValueProxy(newValue)(validatedNewValue)
               : validatedNewValue;
-            return Reflect.set(object, "value", validatedNewValueProxy);
+            return Reflect.set(object, 'value', validatedNewValueProxy);
           },
-        },
+        }
       );
     }
     const _this = validatedValue;
     return makeValidatedValueProxy(value)(
-      Object.create(this, Object.getOwnPropertyDescriptors(_this)),
+      Object.create(this, Object.getOwnPropertyDescriptors(_this))
     );
   } as unknown as ValidatedMutableConstructor<
     Schema,
@@ -135,22 +133,22 @@ export const ValidatedMutable = <
   >;
   ctor.schema = schema;
   ctor.z = function <T extends typeof ctor>(this: T) {
-    return z.ZodAny.create().transform((data, ctx) => {
+    return z.any().transform((data: unknown, ctx: z.RefinementCtx) => {
       try {
-        return new this(data) as InstanceType<T>;
+        return new this(data as z.input<Schema>) as InstanceType<T>;
       } catch (error) {
         if (error instanceof z.ZodError) {
           for (const issue of error.issues) {
             ctx.addIssue(issue);
           }
-          return z.NEVER;
+          return z.never() as never;
         }
         throw error;
       }
-    });
+    }) as z.ZodType<InstanceType<T>>;
   };
   return ctor;
 };
 
 const isObject = (value: unknown): value is object =>
-  value !== null && (typeof value === "object" || typeof value === "function");
+  value !== null && (typeof value === 'object' || typeof value === 'function');
